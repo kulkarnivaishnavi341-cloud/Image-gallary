@@ -1,0 +1,432 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>3D Square Image Gallery</title>
+    <style>
+        /* General body and font styles */
+        body {
+            font-family: 'Inter', sans-serif;
+            
+            
+            background-color: #f0f2f5;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            flex-direction: column;
+            min-height: 100vh;
+            overflow: hidden;
+            user-select: none; /* Prevents text selection during drag */
+            color: #343a40;
+        }
+
+        h1 {
+            font-weight: 600;
+            margin-bottom: 20px;
+        }
+
+        /* Filter buttons */
+        .filter-container {
+            margin-bottom: 30px;
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+            justify-content: center;
+        }
+
+        .filter-btn {
+            padding: 8px 16px;
+            border: 2px solid #007BFF;
+            border-radius: 20px;
+            background-color: transparent;
+            color: #007BFF;
+            font-weight: bold;
+            cursor: pointer;
+            transition: background-color 0.3s ease, color 0.3s ease;
+        }
+
+        .filter-btn:hover, .filter-btn.active {
+            background-color: #007BFF;
+            color: #fff;
+        }
+
+        /* The container for the 3D scene */
+        .scene {
+            width: 400px;
+            height: 200px;
+            perspective: 1000px; /* Gives the 3D effect */
+        }
+
+        /* The cube element itself */
+        .cube {
+            width: 10%;
+            height: 100%;
+            position: relative;
+            transform-style: preserve-3d; /* Key for 3D positioning of children */
+            transform: rotateX(-10deg) rotateY(50deg); /* Initial rotation */
+            transition: transform 0.2s ease-out; /* Smooths the rotation */
+        }
+
+        /* The face of the cube */
+        .face {
+            position: absolute;
+            width: 300px;
+            height: 300px;
+            border: 2px solid #fff;
+            box-sizing: border-box;
+            box-shadow: 0 4px 5px rgba(0, 0, 0, 0.2);
+            background-color: #fff;
+            overflow: hidden;
+            cursor: pointer;
+            transition: transform 0.3s ease;
+        }
+        
+        .face:hover {
+            box-shadow: 0 8px 10px rgba(0, 0, 0, 0.3);
+            transform: scale(1.05);
+        }
+
+        .face img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            display: block;
+        }
+
+        /* Nav buttons for the cube */
+        .nav-buttons {
+            margin-top: 30px;
+            display: flex;
+            gap: 20px;
+        }
+        
+        .nav-btn {
+            padding: 10px 20px;
+            border: none;
+            border-radius: 25px;
+            background-color: #007BFF;
+            color: #fff;
+            font-size: 1rem;
+            font-weight: bold;
+            cursor: pointer;
+            transition: background-color 0.3s ease, transform 0.2s ease;
+        }
+
+        .nav-btn:hover {
+            background-color: #0056b3;
+            transform: translateY(-2px);
+        }
+
+        /* Lightbox modal styling */
+        .lightbox {
+            display: none; /* Hidden by default */
+            position: fixed;
+            z-index: 500;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.9);
+            justify-content: center;
+            align-items: center;
+            overflow: hidden;
+            animation: fadeIn 0.5s ease;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; }
+            to { opacity: 1; }
+        }
+
+        .lightbox-content {
+            position: relative;
+            max-width: 90%;
+            max-height: 90%;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .lightbox-img {
+            max-width: 100%;
+            max-height: 100%;
+            border-radius: 2px;
+            animation: scaleIn 0.5s ease;
+        }
+        
+        @keyframes scaleIn {
+            from { transform: scale(0.8); }
+            to { transform: scale(1); }
+        }
+
+        .lightbox-close-btn {
+            position: absolute;
+            top: 20px;
+            right: 35px;
+            color: #ffffff;
+            font-size: 40px;
+            font-weight: bold;
+            transition: color 0.3s ease;
+            cursor: pointer;
+            z-index: 100;
+        }
+
+        .lightbox-close-btn:hover {
+            color: #adb5bd;
+        }
+
+        .lightbox-nav-btn {
+            position: absolute;
+            top: 50%;
+            transform: translateY(-50%);
+            color: #ffffff;
+            font-size: 50px;
+            cursor: pointer;
+            user-select: none;
+            transition: color 0.3s ease;
+        }
+
+        .lightbox-nav-btn:hover {
+            color: #adb5bd;
+        }
+
+        .prev-lightbox-btn { left: 20px; }
+        .next-lightbox-btn { right: 20px; }
+        
+        /* Responsive design */
+        @media (max-width: 800px) {
+            h1 { font-size: 1.5rem; }
+            .scene { 
+                width: 800px;
+                height: 200px;
+            }
+            .face {
+                width: 200px;
+                height: 100px;
+            }
+            .lightbox-nav-btn {
+                font-size: 30px;
+            }
+            .lightbox-close-btn {
+                font-size: 30px;
+                right: 20px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <h1>3D Image Gallery</h1>
+
+    <div class="filter-container">
+        <button class="filter-btn active" data-filter="all">All</button>
+        <button class="filter-btn" data-filter="nature">Nature</button>
+        <button class="filter-btn" data-filter="city">City</button>
+        <button class="filter-btn" data-filter="food">Food</button><br>
+    </div>
+ <br> <br> <br><br><br><br><br>
+    <div class="scene">
+        <div class="cube" id="cube">
+            <!-- Faces will be dynamically generated by JS -->
+        </div>
+    </div>
+   
+    <div class="nav-buttons">
+        <button id="prevBtn" class="nav-btn">Previous</button>
+        <button id="nextBtn" class="nav-btn">Next</button>
+    </div>
+
+    <!-- The Lightbox Modal -->
+    <div id="lightbox" class="lightbox">
+        <span class="lightbox-close-btn">&times;</span>
+        <img class="lightbox-img" id="lightbox-img" src="" alt="">
+        <a class="lightbox-nav-btn prev-lightbox-btn">&#10094;</a>
+        <a class="lightbox-nav-btn next-lightbox-btn">&#10095;</a>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            // DOM Elements
+            const cube = document.getElementById('cube');
+            const prevBtn = document.getElementById('prevBtn');
+            const nextBtn = document.getElementById('nextBtn');
+            const filterBtns = document.querySelectorAll('.filter-btn');
+            
+            // Lightbox elements
+            const lightbox = document.getElementById('lightbox');
+            const lightboxImg = document.getElementById('lightbox-img');
+            const closeBtn = document.querySelector('.lightbox-close-btn');
+            const prevLightboxBtn = document.querySelector('.prev-lightbox-btn');
+            const nextLightboxBtn = document.querySelector('.next-lightbox-btn');
+
+            // Data structure for images with categories
+            const images = [
+                { src: "mumbai_city.jpeg", title: "Mumbai City", category: "city" },
+                { src: "junkfood.jpeg", title: "Junk Food", category: "food" },
+                { src: "nature5.jpeg", title: "", category: "nature" },
+                 { src: "delhi_city.jpeg", title: "Delhi City", category: "city" },
+                { src: "healthy food.jpeg", title: "Healty food", category: "food" },
+                { src: "nature1.jpeg", title: "River in forest ", category: "nature" },
+                 { src: "pune_city.jpeg", title: "Pune City", category: "city" },
+                { src: "vadapav_food.jpeg", title: "Vada-pav", category: "food" },
+                 { src: "nature10.jpeg", title: "", category: "nature" },
+                { src: "nature2.jpeg", title: "Golden Sunrise", category: "nature" },
+                { src: "samosa_food.jpeg", title: "Samosa", category: "food" },
+                { src: "nature3.jpeg", title: "Nature Beauty with waterfall ", category: "nature" },
+  { src: "city1.jpeg", title: "", category: "city" },
+                { src: "panipuri_food.jpeg", title: "Panupuri", category: "food" },
+                { src: "nature4.jpeg", title: "Mountain Landscape", category: "nature" },
+               
+                { src: "idali_food.jpeg", title: "Idli", category: "food" },
+  { src: "city2.jpeg", title: "", category: "city" },
+                 { src: "nature6.jpeg", title: " ", category: "nature" },
+                { src: "dosa_food.jpeg", title: "Dosa", category: "food" },
+                 { src: "nature5.jpeg", title: "", category: "nature" },
+      { src: "city3.jpeg", title: "", category: "city" },             
+                 { src: "nature7.jpeg", title: "", category: "nature" },
+   { src: "city4.jpeg", title: "", category: "city" },
+                  { src: "nature8.jpeg", title: "", category: "nature" },
+                   { src: "nature9.jpeg", title: "", category: "nature" }, 
+                    { src: "nature2.jpeg", title: "Golden Sunrise", category: "nature" },
+                  { src: "nature10.jpeg", title: "", category: "nature" },
+            ];
+            
+            // State variables
+            let isDragging = false;
+            let startX, startY;
+            let currentX = -20;
+            let currentY = 45;
+            let activeImages = images;
+            let lightboxImages = [];
+            let currentLightboxIndex = 0;
+
+            // Function to dynamically build the cube faces
+            const buildCube = (filteredImages) => {
+                cube.innerHTML = ''; // Clear previous faces
+                const numFaces = filteredImages.length;
+                if (numFaces === 0) {
+                    // Handle case where no images match filter
+                    cube.textContent = 'No images found for this category.';
+                    cube.style.transform = '';
+                    return;
+                }
+
+                // Calculate rotation and translation for each face
+                const angle = 360 / numFaces;
+                const radius = 200 / Math.tan(Math.PI / numFaces); // Formula for positioning faces of a polygon
+
+                filteredImages.forEach((imgData, index) => {
+                    const face = document.createElement('div');
+                    face.className = 'face';
+                    face.style.transform = `rotateY(${index * angle}deg) translateZ(${radius}px)`;
+                    
+                    const img = document.createElement('img');
+                    img.src = imgData.src;
+                    img.alt = imgData.title;
+                    face.appendChild(img);
+
+                    face.addEventListener('click', () => {
+                        openLightbox(imgData.src);
+                    });
+
+                    cube.appendChild(face);
+                });
+            };
+            
+            // Function to open the lightbox
+            const openLightbox = (src) => {
+                lightbox.style.display = 'flex';
+                lightboxImg.src = src;
+                lightboxImages = activeImages.map(img => img.src);
+                currentLightboxIndex = lightboxImages.indexOf(src);
+            };
+
+            // Event listener for next button (cube)
+            nextBtn.addEventListener('click', () => {
+                currentY -= 360 / activeImages.length;
+                cube.style.transform = `rotateX(${currentX}deg) rotateY(${currentY}deg)`;
+            });
+
+            // Event listener for previous button (cube)
+            prevBtn.addEventListener('click', () => {
+                currentY += 360 / activeImages.length;
+                cube.style.transform = `rotateX(${currentX}deg) rotateY(${currentY}deg)`;
+            });
+            
+            // Mouse drag functionality for rotation
+            cube.addEventListener('mousedown', (e) => {
+                isDragging = true;
+                startX = e.clientX;
+                startY = e.clientY;
+                cube.style.transition = 'none';
+            });
+
+            document.addEventListener('mousemove', (e) => {
+                if (!isDragging) return;
+                
+                const dx = e.clientX - startX;
+                const dy = e.clientY - startY;
+
+                currentY += dx * 0.5;
+                currentX -= dy * 0.5;
+
+                // Clamp the X rotation to prevent flipping
+                currentX = Math.max(-90, Math.min(90, currentX));
+
+                cube.style.transform = `rotateX(${currentX}deg) rotateY(${currentY}deg)`;
+                
+                startX = e.clientX;
+                startY = e.clientY;
+            });
+
+            document.addEventListener('mouseup', () => {
+                isDragging = false;
+                cube.style.transition = 'transform 0.2s ease-out';
+            });
+
+            // Filter functionality
+            filterBtns.forEach(btn => {
+                btn.addEventListener('click', () => {
+                    filterBtns.forEach(b => b.classList.remove('active'));
+                    btn.classList.add('active');
+                    const filter = btn.dataset.filter;
+                    if (filter === 'all') {
+                        activeImages = images;
+                    } else {
+                        activeImages = images.filter(img => img.category === filter);
+                    }
+                    buildCube(activeImages);
+                    currentX = -20;
+                    currentY = 45;
+                    cube.style.transform = `rotateX(${currentX}deg) rotateY(${currentY}deg)`;
+                });
+            });
+
+            // Lightbox functionality
+            closeBtn.addEventListener('click', () => {
+                lightbox.style.display = 'none';
+            });
+            
+            prevLightboxBtn.addEventListener('click', () => {
+                currentLightboxIndex = (currentLightboxIndex - 1 + lightboxImages.length) % lightboxImages.length;
+                lightboxImg.src = lightboxImages[currentLightboxIndex];
+            });
+
+            nextLightboxBtn.addEventListener('click', () => {
+                currentLightboxIndex = (currentLightboxIndex + 1) % lightboxImages.length;
+                lightboxImg.src = lightboxImages[currentLightboxIndex];
+            });
+            
+            // Prevent default drag behavior on images
+            document.querySelectorAll('.face img').forEach(img => {
+                img.addEventListener('dragstart', (e) => {
+                    e.preventDefault();
+                });
+            });
+            
+            // Initial build
+            buildCube(activeImages);
+        });
+    </script>
+</body>
+</html>
